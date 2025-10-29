@@ -1,0 +1,116 @@
+/* ============================================================================== */
+/* SQL CODE */
+/* ============================================================================== */
+
+/* ------------------------------------------------------------------------------ */
+/* Experiment 2 & 3: Star Schema & OLAP Operations */
+/* ------------------------------------------------------------------------------ */
+
+/* --- Part A: Star Schema DDL --- */
+/* Case Study: Retail Sales */
+
+/* Dimension 1: Time */
+CREATE TABLE dim_time (
+    time_id INT PRIMARY KEY,
+    full_date DATE,
+    day_of_week VARCHAR(10),
+    month_name VARCHAR(15),
+    quarter INT,
+    year INT
+);
+
+/* Dimension 2: Product */
+CREATE TABLE dim_product (
+    product_key INT PRIMARY KEY,
+    product_sku VARCHAR(50),
+    product_name VARCHAR(100),
+    category VARCHAR(50),
+    brand VARCHAR(50)
+);
+
+/* Dimension 3: Store */
+CREATE TABLE dim_store (
+    store_key INT PRIMARY KEY,
+    store_name VARCHAR(100),
+    city VARCHAR(50),
+    state_province VARCHAR(50),
+    country VARCHAR(50)
+);
+
+/* Fact Table (Central) */
+CREATE TABLE fact_sales (
+    sales_id INT PRIMARY KEY,
+    time_id INT,
+    product_key INT,
+    store_key INT,
+    
+    /* Facts */
+    quantity_sold INT,
+    amount_sold DECIMAL(10, 2),
+    
+    /* Foreign Keys linking to Dimensions */
+    FOREIGN KEY (time_id) REFERENCES dim_time(time_id),
+    FOREIGN KEY (product_key) REFERENCES dim_product(product_key),
+    FOREIGN KEY (store_key) REFERENCES dim_store(store_key)
+);
+
+/* --- Part B: OLAP Operations (SQL Queries) --- */
+/* (Assuming the tables are populated with data) */
+
+/* 1. SLICE (Filter on one dimension) */
+/* Get sales data only for the 'Electronics' category */
+SELECT *
+FROM fact_sales fs
+JOIN dim_product dp ON fs.product_key = dp.product_key
+WHERE dp.category = 'Electronics';
+
+
+/* 2. DICE (Filter on multiple dimensions) */
+/* Get sales for 'Electronics' in the 'USA' */
+SELECT *
+FROM fact_sales fs
+JOIN dim_product dp ON fs.product_key = dp.product_key
+JOIN dim_store ds ON fs.store_key = ds.store_key
+WHERE dp.category = 'Electronics' AND ds.country = 'USA';
+
+
+/* 3. ROLLUP (Aggregate up a hierarchy) */
+/* Get total sales, then sales per year, then sales per year+quarter */
+SELECT 
+    dt.year, 
+    dt.quarter, 
+    SUM(fs.amount_sold) AS total_sales
+FROM fact_sales fs
+JOIN dim_time dt ON fs.time_id = dt.time_id
+GROUP BY dt.year, dt.quarter WITH ROLLUP;
+
+
+/* 4. DRILL-DOWN (Navigate down a hierarchy) */
+/* Query 1: User sees total sales by year (high level) */
+SELECT 
+    dt.year, 
+    SUM(fs.amount_sold) AS total_sales
+FROM fact_sales fs
+JOIN dim_time dt ON fs.time_id = dt.time_id
+GROUP BY dt.year;
+
+/* Query 2: User 'drills down' into a year to see sales by month (low level) */
+SELECT 
+    dt.month_name, 
+    SUM(fs.amount_sold) AS total_sales
+FROM fact_sales fs
+JOIN dim_time dt ON fs.time_id = dt.time_id
+WHERE dt.year = 2025
+GROUP BY dt.month_name;
+
+
+/* 5. PIVOT (Rotate data view) */
+/* Show total sales for each product category, with a separate column for each year */
+SELECT 
+    dp.category,
+    SUM(CASE WHEN dt.year = 2024 THEN fs.amount_sold ELSE 0 END) AS "Sales_2024",
+    SUM(CASE WHEN dt.year = 2025 THEN fs.amount_sold ELSE 0 END) AS "Sales_2025"
+FROM fact_sales fs
+JOIN dim_product dp ON fs.product_key = dp.product_key
+JOIN dim_time dt ON fs.time_id = dt.time_id
+GROUP BY dp.category;

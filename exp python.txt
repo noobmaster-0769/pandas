@@ -1,0 +1,266 @@
+# ==============================================================================
+# PREREQUISITES - Python Libraries to Install
+# ==============================================================================
+# Open your terminal or command prompt and run these commands:
+#
+# pip install pandas
+# pip install matplotlib
+# pip install scikit-learn
+# pip install scipy
+# pip install mlxtend
+# pip install numpy
+#
+# ==============================================================================
+
+
+# ==============================================================================
+# PYTHON CODE
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Experiment 6: K-Means Clustering
+# ------------------------------------------------------------------------------
+# [Code from DWM_Algorithms.pdf, page 1]
+[cite_start]# [cite: 615-671]
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
+# Step 1: Create the dataset
+# [cite_start](Corrected from the PDF's broken formatting using the table [cite: 673])
+data = {
+    'sales_id': [1, 2, 3, 4, 5, 6, 7, 8],
+    'sales_amt': [150, 300, 400, 120, 250, 420, 100, 330],
+    'sales_profit': [20, 80, 40, 10, 70, 90, 5, 60]
+}
+
+df_kmeans = pd.DataFrame(data)
+print("--- K-Means: Original data ---")
+print(df_kmeans)
+
+# Step 2: Select features
+X_kmeans = df_kmeans[['sales_amt', 'sales_profit']] # features for clustering
+
+# Step 3: Apply K-Means
+kmeans = KMeans(n_clusters=3, random_state=0, n_init=10) # choose 3 clusters
+kmeans.fit(X_kmeans)
+
+# Step 4: Add cluster labels
+df_kmeans['cluster'] = kmeans.labels_
+print("\n--- K-Means: Clustered data ---")
+print(df_kmeans)
+
+# Step 5: Plot the clusters
+plt.figure(figsize=(8,6))
+plt.scatter(X_kmeans['sales_amt'], X_kmeans['sales_profit'],
+            c=kmeans.labels_, cmap='rainbow', s=80, edgecolor='k', alpha=0.8)
+
+# plot centroids
+centers = kmeans.cluster_centers_
+plt.scatter(centers[:, 0], centers[:, 1],
+            marker='X', s=200, c='black', label='Centroids')
+
+plt.title('K-Means Clustering (Sales Amount vs Profit)')
+plt.xlabel('Sales Amount')
+plt.ylabel('Sales Profit')
+plt.grid(True)
+plt.legend()
+print("\n(Plotting K-Means graph... close the plot window to continue.)")
+plt.show()
+
+# Optional: Inspect cluster centers and counts
+centers_df = pd.DataFrame(centers, columns=['sales_amt_center', 'sales_profit_center'])
+print("\n--- K-Means: Cluster centers ---")
+print(centers_df)
+print("\n--- K-Means: Counts per cluster ---")
+print(df_kmeans['cluster'].value_counts().sort_index())
+
+
+# ------------------------------------------------------------------------------
+# Experiment 8: Naive Bayes Algorithm
+# ------------------------------------------------------------------------------
+# [Code from DWM_Algorithms.pdf, page 2-3]
+[cite_start]# [cite: 693-713]
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+print("\n\n" + "="*50)
+print("--- Experiment 8: Naive Bayes ---")
+
+# step1: load the dataset
+iris = load_iris()
+X_nb = iris.data
+y_nb = iris.target
+
+# step2: split into training and testing data
+X_train_nb, X_test_nb, y_train_nb, y_test_nb = train_test_split(X_nb, y_nb, test_size=0.3, random_state=42)
+
+# step3: create & train Naive Bayes model
+model_nb = GaussianNB()
+model_nb.fit(X_train_nb, y_train_nb)
+
+# step4: make predictions
+y_pred_nb = model_nb.predict(X_test_nb)
+
+# step5: evaluate performance
+print("Predicted Output:\n", y_pred_nb)
+print("\nActual Output:\n", y_test_nb)
+print("\nAccuracy Score:", accuracy_score(y_test_nb, y_pred_nb))
+print("\nConfusion Matrix:\n", confusion_matrix(y_test_nb, y_pred_nb))
+print("\nClassification Report:\n", classification_report(y_test_nb, y_pred_nb))
+
+
+# ------------------------------------------------------------------------------
+# Experiment 9: Agglomerative Hierarchical Clustering
+# ------------------------------------------------------------------------------
+# [Code from DWM_Algorithms.pdf, page 3-4]
+[cite_start]# [cite: 756-792]
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import AgglomerativeClustering
+import scipy.cluster.hierarchy as sch
+
+print("\n\n" + "="*50)
+print("--- Experiment 9: Agglomerative Clustering ---")
+
+# Step 1: Sample data (marks of students in math and science)
+# (Corrected typo - removed '1)[cite_start]' from the end of the array [cite: 767])
+X_agg = np.array([
+    [35, 30],
+    [40, 42],
+    [50, 50],
+    [60, 62],
+    [92, 90]
+])
+
+# Step 2: Create dendrogram to decide number of clusters
+plt.figure(figsize=(7, 6))
+dendrogram = sch.dendrogram(sch.linkage(X_agg, method='ward'))
+plt.title("Dendrogram (Student Marks)")
+plt.xlabel("Students")
+plt.ylabel("Euclidean Distance")
+plt.grid(True)
+print("\n(Plotting Dendrogram... close the plot window to continue.)")
+plt.show()
+
+# Step 3: Apply Agglomerative Hierarchical Clustering
+# (Based on the dendrogram, we choose n_clusters=2)
+cluster = AgglomerativeClustering(n_clusters=2, metric='euclidean', linkage='ward')
+labels_agg = cluster.fit_predict(X_agg)
+
+# Step 4: Print result
+print("Student marks (Math, Science):\n", X_agg)
+print("Cluster labels:", labels_agg)
+
+# Step 5: Visualize final clusters
+plt.figure(figsize=(6, 4))
+plt.scatter(X_agg[:, 0], X_agg[:, 1], c=labels_agg, cmap='rainbow', s=100)
+plt.title("Agglomerative Hierarchical Clustering")
+plt.xlabel("Math Marks")
+plt.ylabel("Science Marks")
+plt.grid(True)
+print("\n(Plotting final clusters... close the plot window to continue.)")
+plt.show()
+
+
+# ------------------------------------------------------------------------------
+# Experiment 10: Association Rule Mining (Apriori)
+# ------------------------------------------------------------------------------
+# [Code from DWM_Algorithms.pdf, page 4-5]
+[cite_start]# [cite: 835-862]
+
+import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+import warnings
+
+warnings.filterwarnings('ignore') # Ignore all warnings
+
+print("\n\n" + "="*50)
+print("--- Experiment 10: Apriori Algorithm ---")
+
+# Step 2: Create a simple transaction dataset
+# [cite_start](Corrected from the PDF's broken formatting [cite: 839-845])
+dataset = [
+    ['Milk', 'Bread', 'Butter'],
+    ['Milk', 'Bread'],
+    ['Milk', 'Eggs'],
+    ['Bread', 'Eggs'],
+    ['Milk', 'Bread', 'Eggs']
+]
+
+# Step 3: Convert dataset to one-hot encoded DataFrame
+# (Using mlxtend's TransactionEncoder is a more standard way, but this manual
+# way from the PDF also works)
+items = sorted(list({item for transaction in dataset for item in transaction}))
+encoded_vals = []
+for transaction in dataset:
+    encoded_vals.append([item in transaction for item in items])
+
+df_apriori = pd.DataFrame(encoded_vals, columns=items)
+print("One-Hot Encoded DataFrame:\n")
+print(df_apriori)
+
+# Step 4: Find frequent itemsets
+# [cite_start](Corrected min_support from 8.4 to 0.4. 8.4 is invalid [cite: 855])
+# min_support=0.4 means 0.4 * 5 transactions = 2
+frequent_items = apriori(df_apriori, min_support=0.4, use_colnames=True)
+print("\nFrequent Itemsets (min_support=0.4):\n")
+print(frequent_items)
+
+# Step 5: Generate association rules
+rules = association_rules(frequent_items, metric='confidence', min_threshold=0.6)
+print("\nAssociation Rules (min_confidence=0.6):\n")
+print(rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']])
+
+
+# ------------------------------------------------------------------------------
+# Experiment 11: PageRank Algorithm (Numpy implementation)
+# ------------------------------------------------------------------------------
+# [Code from DWM_Algorithms.pdf, page 5]
+[cite_start]# [cite: 883-906]
+
+import numpy as np
+
+print("\n\n" + "="*50)
+print("--- Experiment 11: PageRank Algorithm ---")
+
+# Step 2: Create Link Matrix (M)
+# This matrix represents the graph:
+# Page 1 links to 2, 3
+# Page 2 links to 3, 4
+# Page 3 links to 1
+# Page 4 links to 2
+# M[i, j] = 1/N(j) if j links to i (N(j) = num outgoing links from j)
+M = np.array([
+    [0, 0, 1, 0],
+    [0.5, 0, 0, 0.5],
+    [0.5, 0.5, 0, 0],
+    [0, 0.5, 0, 0]
+])
+
+# Step 3: Initialize parameters
+n = M.shape[0]  # Number of pages
+d = 0.85        # Damping factor
+r = np.ones(n) / n # Initial rank (equal for all pages)
+
+# Step 4: Run iterations
+for i in range(10): # Run 10 iterations
+    r_new = (1 - d) / n + d * M.dot(r)
+    r = r_new # Update ranks for next iteration
+
+# Step 5: Print PageRank scores
+# [cite_start](Corrected print statement [cite: 903])
+print("PageRank Scores:")
+for i, score in enumerate(r, start=1):
+    print(f"Page {i}: {score:.4f}")
+
+# Step 6: Find the highest ranked page
+# [cite_start](Corrected print statement [cite: 905-906])
+max_page_index = np.argmax(r)
+max_page = max_page_index + 1
+print(f"\nPage {max_page} has the highest rank with score {r[max_page_index]:.4f}")
