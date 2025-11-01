@@ -1,0 +1,252 @@
+======================================================
+== CISCO PACKET TRACER PRACTICALS - STEP-BY-STEP
+======================================================
+
+NOTE:
+- "Auto Cable" is the lightning bolt with an 'A'. It's fast but for exams, know the cable types.
+- "Straight-Through" (solid line) connects different device types (PC to Switch, Switch to Router).
+- "Crossover" (dashed line) connects
+  similar device types (Switch to Switch, PC to PC, Router to Router).
+
+------------------------------------------------------
+PRACTICALS 1, 3, 5, 7, 9: NETWORK TOPOLOGIES
+------------------------------------------------------
+
+These steps cover Star, Bus, Ring, Mesh, and Hybrid topologies.
+
+---
+A. Implement Star Topology
+---
+(Covers parts of 1, 7, 9)
+
+1.  Devices:
+    -   Drag 1 Switch (e.g., 2960) to the workspace.
+    -   Drag 4 PCs to the workspace.
+2.  Connections (Cabling):
+    -   Select the "Copper Straight-Through" cable.
+    -   Click PC1 -> FastEthernet0.
+    -   Click Switch -> FastEthernet0/1.
+    -   Repeat for other PCs, connecting them to ports 0/2, 0/3, 0/4 on the switch.
+3.  IP Configuration:
+    -   Click PC1 -> Desktop tab -> IP Configuration.
+    -   Set IP Address: 192.168.1.1
+    -   Set Subnet Mask: 255.255.255.0 (it will auto-fill).
+    -   Repeat for other PCs:
+        -   PC2: 192.168.1.2
+        -   PC3: 192.168.1.3
+        -   PC4: 192.168.1.4
+4.  Test:
+    -   Click PC1 -> Desktop -> Command Prompt.
+    -   Type: ping 192.168.1.2
+    -   You should get a "Reply from..."
+
+---
+B. Implement Ring Topology
+---
+(Covers parts of 1, 3, 9)
+
+1.  Devices:
+    -   Drag 3 Switches (e.g., 2960).
+    -   Drag 3 PCs.
+2.  Connections (Cabling):
+    -   Use "Copper Crossover" cables (or Auto cable) for Switch-to-Switch.
+    -   Connect Switch1 (port 0/1) to Switch2 (port 0/1).
+    -   Connect Switch2 (port 0/2) to Switch3 (port 0/1).
+    -   Connect Switch3 (port 0/2) to Switch1 (port 0/2). This completes the ring.
+    -   Use "Copper Straight-Through" cables to connect one PC to each switch (e.g., port 0/10).
+3.  Observation:
+    -   Wait 30-60 seconds. You will see one of the Switch-to-Switch port lights turn ORANGE.
+    -   This is Spanning Tree Protocol (STP) preventing a broadcast storm (network loop).
+4.  IP Configuration:
+    -   Configure all 3 PCs to be on the same network:
+        -   PC1: 192.168.1.1
+        -   PC2: 192.168.1.2
+        -   PC3: 192.168.1.3
+        -   Subnet Mask: 255.255.255.0 for all.
+5.  Test:
+    -   From PC1, ping PC3 (ping 192.168.1.3).
+    -   It will work. STP blocks a port but maintains connectivity.
+
+---
+C. Implement Bus Topology
+---
+(Covers parts of 3, 5, 9)
+
+*Note: Packet Tracer doesn't easily simulate old coaxial bus. We create a "linear" or "daisy-chain" topology using switches, which is the modern equivalent.*
+
+1.  Devices:
+    -   Drag 3 Switches.
+    -   Drag 4 PCs.
+2.  Connections (Cabling):
+    -   Use "Copper Crossover" to connect Switch1 to Switch2.
+    -   Use "Copper Crossover" to connect Switch2 to Switch3. (This forms the "bus" backbone).
+    -   Use "Copper Straight-Through" to connect PCs to the switches. (e.g., 2 PCs on Switch1, 2 on Switch3).
+3.  IP Configuration:
+    -   Assign all PCs IPs in the same network (e.g., 192.168.1.1, 192.168.1.2, ...).
+4.  Test:
+    -   Ping from a PC on Switch1 to a PC on Switch3. It will work.
+
+---
+D. Implement Mesh Topology
+---
+(Covers part of 7)
+
+1.  Devices:
+    -   Drag 4 Switches.
+2.  Connections (Cabling):
+    -   Use "Copper Crossover" cables.
+    -   Connect *every* switch to *every other* switch.
+        -   Switch1 -> Switch2, Switch3, Switch4
+        -   Switch2 -> Switch3, Switch4
+        -   Switch3 -> Switch4
+3.  Observation:
+    -   Wait for STP to converge. You will see MANY orange (blocked) ports to prevent loops, leaving only one active path between any two switches. This shows high redundancy.
+4.  Test:
+    -   Connect a PC to each switch, configure IPs (e.g., 192.168.1.1 ... 1.4), and verify pings.
+
+---
+E. Implement Hybrid Topology
+---
+(Covers part of 5)
+
+*A hybrid topology just combines two or more other topologies. A "Star-Bus" is the most common.*
+
+1.  Build Topology A (Star):
+    -   1 Switch (Switch_A) and 2 PCs (PC_A1, PC_A2).
+    -   Connect PCs to Switch_A.
+    -   IPs: 192.168.1.10, 192.168.1.11
+2.  Build Topology B (Star):
+    -   1 Switch (Switch_B) and 2 PCs (PC_B1, PC_B2).
+    -   Connect PCs to Switch_B.
+    -   IPs: 192.168.1.20, 192.168.1.21
+3.  Combine (Bus):
+    -   Use a "Copper Crossover" cable to connect Switch_A to Switch_B.
+4.  Test:
+    -   Ping from PC_A1 to PC_B1 (ping 192.168.1.20). It will work as they are all on the same 192.168.1.0 network.
+
+------------------------------------------------------
+PRACTICAL 2: INTERCONNECT TWO NETWORKS (ROUTER)
+------------------------------------------------------
+
+This is the most important practical. It shows how routers connect different networks.
+
+1.  Build Network A (Star):
+    -   Drag 1 Switch (Switch_A) and 1 PC (PC_A).
+    -   Connect PC_A to Switch_A.
+    -   Configure PC_A:
+        -   IP Address: 192.168.1.10
+        -   Subnet Mask: 255.255.255.0
+        -   Default Gateway: 192.168.1.1 (This is the router, which we will add next)
+
+2.  Build Network B (Star):
+    -   Drag 1 Switch (Switch_B) and 1 PC (PC_B).
+    -   Connect PC_B to Switch_B.
+    -   Configure PC_B:
+        -   IP Address: 192.168.2.10
+        -   Subnet Mask: 255.255.255.0
+        -   Default Gateway: 192.168.2.1
+
+3.  Add the Router:
+    -   Drag 1 Router (e.g., 2911) to the workspace.
+    -   Use "Straight-Through" to connect Switch_A (port 0/1) to the Router (port GigabitEthernet0/0).
+    -   Use "Straight-Through" to connect Switch_B (port 0/1) to the Router (port GigabitEthernet0/1).
+    -   All port lights will be RED.
+
+4.  Configure the Router:
+    -   Click the Router.
+    -   Go to the "Config" tab.
+    -   On the left, select "GigabitEthernet0/0" (the connection to Network A).
+        -   Set IP Address: 192.168.1.1
+        -   Set Subnet Mask: 255.255.255.0
+        -   Check the "On" box for Port Status. The light will turn green.
+    -   On the left, select "GigabitEthernet0/1" (the connection to Network B).
+        -   Set IP Address: 192.168.2.1
+        -   Set Subnet Mask: 255.255.255.0
+        -   Check the "On" box. The light will turn green.
+
+5.  Test:
+    -   Wait for all lights to be green.
+    -   Click PC_A -> Desktop -> Command Prompt.
+    -   Type: ping 192.168.2.10
+    -   The first ping might "time out" (this is ARP), but the rest will be successful replies.
+
+6.  Display Protocols (Simulation):
+    -   Click the "Simulation" tab in the bottom-right corner.
+    -   Repeat the ping from PC_A to PC_B.
+    -   Click the "Auto Capture / Play" button (looks like a play button) to watch the packet.
+    -   You will see an "ICMP" packet (the ping).
+    -   Watch it go from PC_A -> Switch_A -> Router -> Switch_B -> PC_B.
+    -   You may also see "ARP" packets, which are used to find MAC addresses.
+
+------------------------------------------------------
+PRACTICAL 8: IMPLEMENT MAIL (SMTP/POP3) AND WEB (HTTP) SERVER
+------------------------------------------------------
+*Note: The practical asks for HTTP, but it's a MAIL server. We will configure both, as is common.*
+
+1.  Devices:
+    -   Drag 1 Server.
+    -   Drag 1 Switch.
+    -   Drag 2 PCs (PC1, PC2).
+2.  Connections:
+    -   Use "Straight-Through" cables to connect all 3 devices (Server, PC1, PC2) to the switch.
+3.  IP Configuration:
+    -   Server:
+        -   Click Server -> Desktop -> IP Configuration.
+        -   IP Address: 192.168.1.100
+        -   Subnet Mask: 255.255.255.0
+    -   PC1:
+        -   IP Address: 192.168.1.1
+    -   PC2:
+        -   IP Address: 192.168.1.2
+4.  Configure Server Services:
+    -   Click the Server -> "Services" tab.
+    -   **HTTP (Web Server):**
+        -   Click "HTTP" on the left.
+        -   Ensure "HTTP" and "HTTPS" are "On".
+        -   Click "index.html" -> "Edit".
+        -   Change the HTML to something like "<h1>My CN Practical Server!</h1>".
+        -   Click "Save".
+    -   **Email (Mail Server):**
+        -   Click "EMAIL" on the left.
+        -   Ensure "SMTP" and "POP3" services are "On".
+        -   Set "Domain Name": mylab.com
+        -   Click "Set".
+        -   Create users:
+            -   User: user1, Password: pass
+            -   Click "+".
+            -   User: user2, Password: pass
+            -   Click "+".
+5.  Test HTTP (Web):
+    -   Click PC1 -> Desktop -> Web Browser.
+    -   In the URL bar, type the server's IP: 192.168.1.100
+    -   Click "Go". You should see your "My CN Practical Server!" message.
+6.  Test Email:
+    -   **Configure PC1:**
+        -   Click PC1 -> Desktop -> Email.
+        -   Your Name: User One
+        -   Email Address: user1@mylab.com
+        -   Incoming Mail Server (POP3): 192.168.1.100
+        -   Outgoing Mail Server (SMTP): 192.168.1.100
+        -   Username: user1
+        -   Password: pass
+        -   Click "Save".
+    -   **Configure PC2:**
+        -   Click PC2 -> Desktop -> Email.
+        -   Configure similarly, but use:
+            -   Name: User Two
+            -   Email: user2@mylab.com
+            -   Username: user2
+            -   Password: pass
+    -   **Send Mail (from PC1):**
+        -   On PC1's email client, click "Compose".
+        -   To: user2@mylab.com
+        -   Subject: Test
+        -   Body: Hello!
+        -   Click "Send".
+    -   **Receive Mail (on PC2):**
+        -   On PC2's email client, click "Receive".
+        -   The email from user1 should appear.
+
+======================================================
+== END OF PRACTICALS
+======================================================

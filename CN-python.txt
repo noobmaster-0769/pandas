@@ -1,0 +1,208 @@
+import socket
+import threading
+import sys
+
+HOST = '127.0.0.1'
+PORT = 65432
+
+# --- Practical 4: Error Detection (Checksum) ---
+
+def calculate_checksum(data):
+    if len(data) % 2 != 0:
+        data += '\x00'
+    s = 0
+    for i in range(0, len(data), 2):
+        w = (ord(data[i]) << 8) + ord(data[i+1])
+        s = s + w
+    s = (s >> 16) + (s & 0xFFFF)
+    s = s + (s >> 16)
+    checksum = ~s & 0xFFFF
+    return checksum
+
+def verify_checksum(data, checksum):
+    if len(data) % 2 != 0:
+        data += '\x00'
+    s = 0
+    for i in range(0, len(data), 2):
+        w = (ord(data[i]) << 8) + ord(data[i+1])
+        s = s + w
+    s = (s >> 16) + (s & 0xFFFF)
+    s = s + (s >> 16)
+    s = s + checksum
+    s = (s >> 16) + (s & 0xFFFF)
+    return s == 0xFFFF
+
+def run_practical_4():
+    print("--- Running Practical 4: Checksum ---")
+    message = "HelloNetworkLab"
+    checksum = calculate_checksum(message)
+    print(f"Sender: Message = '{message}', Checksum = {hex(checksum)}")
+    
+    is_valid = verify_checksum(message, checksum)
+    print(f"Receiver (No Error): Valid = {is_valid}")
+
+    received_message_error = "JelloNetworkLab"
+    is_valid_error = verify_checksum(received_message_error, checksum)
+    print(f"Receiver (With Error): Valid = {is_valid_error}")
+
+# --- Practical 6: Error Correction (Hamming Code) ---
+
+def calculate_hamming_code(data_bits):
+    d1, d2, d3, d4 = data_bits
+    p1 = d1 ^ d2 ^ d4
+    p2 = d1 ^ d3 ^ d4
+    p3 = d2 ^ d3 ^ d4
+    return [p1, p2, d1, p3, d2, d3, d4]
+
+def detect_and_correct_error(received_code):
+    p1, p2, d1, p3, d2, d3, d4 = received_code
+    c1 = p1 ^ d1 ^ d2 ^ d4
+    c2 = p2 ^ d1 ^ d3 ^ d4
+    c3 = p3 ^ d2 ^ d3 ^ d4
+    error_position = (c3 * 4) + (c2 * 2) + c1
+    
+    if error_position != 0:
+        print(f"Receiver: Error at position {error_position}. Correcting...")
+        received_code[error_position - 1] = 1 - received_code[error_position - 1]
+    else:
+        print("Receiver: No error detected.")
+    
+    return [received_code[2], received_code[4], received_code[5], received_code[6]]
+
+def run_practical_6():
+    print("\n--- Running Practical 6: Hamming Code ---")
+    data = [1, 0, 1, 1]
+    print(f"Sender: Data = {data}")
+    code_to_send = calculate_hamming_code(data)
+    print(f"Sender: Hamming Code = {code_to_send}")
+
+    received_code_with_error = code_to_send[:]
+    received_code_with_error[4] = 1 - received_code_with_error[4] # Error at bit 5
+    print(f"Receiver: Received (with error) = {received_code_with_error}")
+    final_data = detect_and_correct_error(received_code_with_error)
+    print(f"Receiver: Corrected Data = {final_data}")
+
+# --- Practical 10: Half-Duplex Client/Server ---
+
+def run_practical_10_server():
+    print("--- Running Practical 10: Half-Duplex Server ---")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+        s.listen()
+        print(f"Server listening on {HOST}:{PORT}...")
+        conn, addr = s.accept()
+        with conn:
+            print(f"Connected by {addr}")
+            while True:
+                data = conn.recv(1024) # Listen first
+                if not data or data.decode().lower() == 'exit':
+                    print("Client disconnected.")
+                    break
+                print(f"Client: {data.decode()}")
+                
+                message = input("Server -> ") # Talk second
+                conn.sendall(message.encode())
+                if message.lower() == 'exit': break
+
+def run_practical_10_client():
+    print("--- Running Practical 10: Half-Duplex Client ---")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        print(f"Connected to server at {HOST}:{PORT}")
+        while True:
+            message = input("Client -> ") # Talk first
+            s.sendall(message.encode())
+            if message.lower() == 'exit':
+                print("Disconnecting.")
+                break
+                
+            data = s.recv(1024) # Listen second
+            if not data or data.decode().lower() == 'exit':
+                print("Server disconnected.")
+                break
+            print(f"Server: {data.decode()}")
+
+# --- Practical 11: Full-Duplex Client/Server ---
+
+def full_duplex_receive(conn, party_name):
+    while True:
+        try:
+            data = conn.recv(1024)
+            if not data: break
+            print(f"\r{party_name}: {data.decode()}\nYou -> ", end="")
+        except:
+            break
+    print(f"\nConnection closed by {party_name}.")
+    conn.close()
+
+def full_duplex_send(conn):
+    while True:
+        try:
+            message = input("You -> ")
+            conn.sendall(message.encode())
+            if message.lower() == 'exit':
+                break
+        except:
+            break
+    conn.close()
+
+def run_practical_11_server():
+    print("--- Running Practical 11: Full-Duplex Server ---")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind((HOST, PORT))
+        s.listen()
+        print(f"Server listening on {HOST}:{PORT}...")
+        conn, addr = s.accept()
+        print(f"Connected by {addr}. Chat starting...")
+
+        threading.Thread(target=full_duplex_receive, args=(conn, "Client"), daemon=True).start()
+        send_thread = threading.Thread(target=full_duplex_send, args=(conn,))
+        send_thread.start()
+        send_thread.join()
+        print("Server shutting down.")
+
+def run_practical_11_client():
+    print("--- Running Practical 11: Full-Duplex Client ---")
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        try:
+            s.connect((HOST, PORT))
+            print(f"Connected to server. Chat starting...")
+        except ConnectionRefusedError:
+            print("Connection failed. Server not running.")
+            return
+        
+        threading.Thread(target=full_duplex_receive, args=(s, "Server"), daemon=True).start()
+        send_thread = threading.Thread(target=full_duplex_send, args=(s,))
+        send_thread.start()
+        send_thread.join()
+        print("Connection closed.")
+
+# --- Main Execution ---
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python cn_practicals.py [argument]")
+        print("Arguments:")
+        print("  4          : Run Practical 4 (Checksum)")
+        print("  6          : Run Practical 6 (Hamming Code)")
+        print("  server10   : Run Practical 10 (Half-Duplex Server)")
+        print("  client10   : Run Practical 10 (Half-Duplex Client)")
+        print("  server11   : Run Practical 11 (Full-Duplex Server)")
+        print("  client11   : Run Practical 11 (Full-Duplex Client)")
+        sys.exit()
+
+    arg = sys.argv[1]
+
+    if arg == '4':
+        run_practical_4()
+    elif arg == '6':
+        run_practical_6()
+    elif arg == 'server10':
+        run_practical_10_server()
+    elif arg == 'client10':
+        run_practical_10_client()
+    elif arg == 'server11':
+        run_practical_11_server()
+    elif arg == 'client11':
+        run_practical_11_client()
+    else:
+        print(f"Error: Unknown argument '{arg}'")
